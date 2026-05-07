@@ -1,0 +1,18 @@
+#logs en andere IDE gerelateerde folders
+*logs
+*__pycache__
+*.venv
+*.vscode
+#Archivetextminer voor informatie
+*ArchiveTextMiner_sourcecode
+#onnodige files in sourcefile
+src/__pycache__
+src/Poppler
+src/Tesseract
+src/ai_response_jsonstructure.json
+src/notes.txt
+src/testen_random_code.py
+src/extract_text.py
+#testjes files
+test.py
+testje_functionaliteit_unstructured.py
