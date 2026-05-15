@@ -15,24 +15,21 @@ class DataFrame_pipeline():
                 "xmp" : "^xmp:|xmpMM:|xmpTPg",
                 "X-tika" :"X-TIKA:|tika|tika_|tika_batch",
                 "meta" : "meta:",
-                "extendend_properties" : "extended-properties:",
+                "Extendend properties" : "extended-properties:",
                 "MSIP" : "^(?!pdf:).*MSIP_Label",
-                "Exif": "Exif|exif"
+                "Exif": "Exif|exif",
+                "Image" : "Image"
                 } #you can add namespaces here
     
-    DATAFRAME_RETURNS = ["raw", "filetype_dict(all unique filetypes)", 
-                         "Namespace dict (all namespace dfs)", 
-                         "leftover fields df (all fields not belonging to a namespace)",
-                         "percentage_df"]
-    
-    OPTIONS = ["stats", "duplicate_values"]
-    
-    
 
-    def __init__(self, root_dir : str | Path, log_folder_path : str | Path, xlsx_path : str | Path):
+
+    def __init__(self, root_dir : str | Path, log_folder_path : str | Path, xlsx_path : str | Path,
+                 output_DataFrames, output_options):
         self.root_dir = root_dir
         self.log_folder_path = log_folder_path
         self.xlsx_path = xlsx_path
+        self.output_options = ["df_raw", "df_percentage", "df_leftover_fields"] + self.filetype_list + list(self.NAMESPACE_DICT.keys())
+        self.options = ["visualiseren duplicaten", "add summary columns"]
 
     @cached_property
     def df_raw(self):
@@ -89,7 +86,10 @@ class DataFrame_pipeline():
         file_ext_column = self.df_raw.loc[df.index, "tika:file_ext"]
         df = pd.concat([df, file_ext_column], axis = 1)#.set_index("tika:file_ext")
         namespace_return["Image"] = df
-        return self.summary_columns(namespace_return)
+        return namespace_return
+    
+    def return_namespace_dfs(self, namespace : str, summary = False):
+       return self.summary_columns(self.namespace_return[namespace]) if summary else self.genereren_namespace_dfs[namespace]
     
     #overbodig?
     def return_namespace_columns(self):
@@ -98,14 +98,14 @@ class DataFrame_pipeline():
             df_columns.append(namespace_columns.columns)
         return df_columns
     
-    def create_dataframe_leftover_fields(self):
+    def create_dataframe_leftover_fields(self, summary = False):
         index = []
         for columns in self.genereren_namespace_dfs.values():
             index.append(columns.columns)
         index = list(set(chain.from_iterable(index)))
-        return self.summary_columns(self.df_raw.drop(index, axis = 1).set_index("tika:file_ext")) 
-    
-    def visualiseren_duplicaten_DataFrames(self, df): 
+        return self.summary_columns(self.df_raw.drop(index, axis = 1)).set_index("tika:file_ext") if summary else self.df_raw.drop(index, axis = 1).set_index("tika:file_ext")
+
+    def visualiseren_duplicaten_DataFrames(self, df, summary = False): 
         columns = []
         for col_a, col_b in combinations(df.columns, 2):
             overlap = (df[col_a] == df[col_b]).sum()
@@ -115,7 +115,7 @@ class DataFrame_pipeline():
         unpack = list(chain.from_iterable(columns))
         remove_duplicates = list(dict.fromkeys(unpack))
         df = df[remove_duplicates]
-        return self.summary_columns(df)
+        return self.summary_columns(df) if summary else df
     
     ##funcs for percentage non-NA values per namespace
     def make_namespace_series(self): 
@@ -128,7 +128,7 @@ class DataFrame_pipeline():
         return combined
     
     @cached_property
-    def berekenen_percentages(self):
+    def berekenen_percentages(self, summary = False):
         percentage_dict = {}
         for filetype in self.filetype_list:
             filetype_df = self.df_raw.set_index("tika:file_ext").filter(axis = 0, regex = filetype)
@@ -140,18 +140,18 @@ class DataFrame_pipeline():
         df = pd.concat([df, df_mean_values], axis=1).rename({0 : 'gemiddelde'}, axis = 1).sort_values(axis = 0, by = ['gemiddelde'] , ascending= False)
         namespace_series = self.make_namespace_series()
         df = df.assign(namespace = namespace_series)
-        return df
+        return df if summary else df #set up logging
     
     def df_browser_viewer(self):
         
     def df_excel_writer(self):
         excelwriter_options = ["df_raw", "df_percentage", "df_leftover_fields"]
         options = ["visualiseren duplicaten", "summary_columns"]
-        excelwriter_options.extend(self.genereren_filetype_dfs.keys())
-        excelwriter_options.extend(self.genereren_namespace_dfs.keys())
+        excelwriter_options.extend(self.filetype_list)
+        excelwriter_options.extend(self.NAMESPACE_DICT.keys())
         self.df_raw.to_excel(self.xlsx_path)
         with pd.ExcelWriter(self.xlsx_path, engine = "openpyxl", mode = "a") as writer:
-
+            
 
 # df_raw.to_excel("C:/Users/m.venema/Desktop/test/dataframe_test.xlsx")
 # with pd.ExcelWriter("C:/Users/m.venema/Desktop/test/dataframe_test.xlsx", engine = "openpyxl", mode = "a") as writer:
