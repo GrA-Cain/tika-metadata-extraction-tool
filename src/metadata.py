@@ -140,8 +140,8 @@ def metadata_genereren(root_dir: str | Path, logging_folder_path: str | Path):
         except Exception as e:
             stder_output = getattr(e, "stderr", None)
             logger.error(f"Something went wrong with {paths}: {e}, stderr: {stder_output}", exc_info=True)
-        if index % 2 == 0:
-            logger.info(f"progress: {index}/{len(folders_list)} folders processed")
+        if index % 2 == 0: #set modulus number higher when when working with large datasets
+            logger.info(f"progress: {index}/{len(folders_list)} folders processed") 
             
 def metadata_selectie(root_dir: str | Path, log_folder_path : str | Path, output_as_yaml: False):
     logger = make_logger("metadata selectie", log_folder_path)
