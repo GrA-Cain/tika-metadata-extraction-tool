@@ -123,16 +123,22 @@ def remove_json(root_dir: str | Path, log_folder_path: str | Path, alle_json_ver
             logger.info("did not delete any files")
 
 #if java is installed,
-def metadata_genereren(root_dir: str | Path, logging_folder_path: str | Path):
+def metadata_genereren(root_dir: str | Path, logging_folder_path: str | Path): ##working directory aanpassen
     root_dir = Path(root_dir)
     logger = make_logger("metadata_genereren", logging_folder_path)
     all_paths = list(root_dir.rglob('*'))
     logger.info(f"Scan: {len(all_paths)} paden gevonden! (mappen en bestanden)")
     folders_list = []
+    files_list = []
     for folders in all_paths: #loop door alle paden, mapjes afvangen
         if folders.is_dir():
             folders_list.append(folders)
+        elif folders.is_file():
+            files_list.append(folders)
     logger.info(f"Scan: {len(folders_list)} folders found!")
+    logger.info(f"Scan: {len(files_list)} files found!")
+    files_list = list(set(files_list))
+    logger.info(f"Scan: {len(files_list)} files left after removing duplicates")
     for index, paths in enumerate(folders_list): #tika werkt met folders, dus folders lijst als input voor de cmd call
         try:
             cmd_command = f'call configure.bat && java -jar tika.jar -i "{paths}" -o "{paths}" -J -excludeFilePat ".json"'  #cmd command als string
