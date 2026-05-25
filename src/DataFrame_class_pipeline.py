@@ -158,6 +158,19 @@ class DataFramePipeline():
         logger = self.metadata.excelwriter_logger
         request_dict = {request: DataFrame for request, DataFrame in self.output_dataframe_dict.items() if request in request_list}
         if sample:
+           self.df_raw.sample(sample).to_excel(self.xlsx_path) #add sample to all functions
+        with pd.ExcelWriter(self.xlsx_path, engine = "openpyxl", mode = "a") as writer:
+            for request, func in request_dict.items():
+                output = func(summary = summary)
+                if output.empty:
+                   logger.info(f"{request} DataFrame empty! Cannot write to excel")
+                else:
+                    output.to_excel(writer, sheet_name = request)
+    
+    def df_excel_writer_duplicates(self, request_list: list, summary = False, sample: int = None):
+        logger = self.metadata.excelwriter_logger
+        request_dict = {request: DataFrame for request, DataFrame in self.output_dataframe_dict.items() if request in request_list}
+        if sample:
            self.df_raw.sample(sample).to_excel(self.xlsx_path)
         with pd.ExcelWriter(self.xlsx_path, engine = "openpyxl", mode = "a") as writer:
             for request, func in request_dict.items():
@@ -168,5 +181,3 @@ class DataFramePipeline():
                     output.to_excel(writer, sheet_name = request)
 
 
-
-#def df_browser_viewer(self):
