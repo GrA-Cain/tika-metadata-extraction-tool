@@ -1,6 +1,6 @@
 import pandas as pd
 from pathlib import Path
-from metadata import metadata_dataframe as ms
+from metadata_pipeline import MetaDataPipeline
 import openpyxl
 import xlsxwriter
 from itertools import combinations, chain
@@ -8,36 +8,35 @@ from functools import cached_property
 import dtale
 
 
-class DataFrame_pipeline():
-    NAMESPACE_DICT = {"Message ns": "Message:|Message-",
-                "Mapi" : "mapi:",
-                "dc" : "^dc:|dcterms",
-                "pdf" : "^pdf:|pdfaid|pdfa:|pdfuaid",
-                "xmp" : "^xmp:|xmpMM:|xmpTPg",
-                "X-tika" :"X-TIKA:|tika|tika_|tika_batch",
-                "meta" : "meta:",
-                "Extendend properties" : "extended-properties:",
-                "MSIP" : "^(?!pdf:).*MSIP_Label",
-                "Exif": "Exif|exif",
-                "Image" : "Image"
-                } #you can add namespaces here using the following format name (key) : regex str(value). 
+class DataFramePipeline():
+    METADATA_GROUPS_DICT = {"Message group": "Message:|Message-",
+                "Mapi group" : "mapi:",
+                "dc group" : "^dc:|dcterms",
+                "pdf group" : "^pdf:|pdfaid|pdfa:|pdfuaid",
+                "xmp group" : "^xmp:|xmpMM:|xmpTPg",
+                "X-tika group" :"X-TIKA:|tika|tika_|tika_batch",
+                "meta group" : "meta:",
+                "Extendend properties group" : "extended-properties:",
+                "MSIP group" : "^(?!pdf:).*MSIP_Label",
+                "Exif group": "Exif|exif",
+                "Image group" : "Image"
+                } #you can add metadata groups here using the following format "name" (key) : "regex str"(value). 
     
     def __init__(self, root_dir : str | Path, log_folder_path : str | Path, xlsx_path : str | Path):
-        self.root_dir = root_dir
-        self.log_folder_path = log_folder_path
+        self.metadata = MetaDataPipeline(root_dir, log_folder_path)
         self.xlsx_path = xlsx_path
-        self.output_options = ["basis", "Coverage (non-NA) of metadata by filetype", "Leftover fields"] + self.filetype_list + list(self.NAMESPACE_DICT.keys())
+        self.output_options = ["basis", "Coverage (non-NA) of metadata by filetype", "Leftover fields"] + self.filetype_list + list(self.METADATA_GROUPS_DICT.keys())
         self.function_calls = [lambda: self.df_raw,
                                lambda summary: self.field_coverage_by_filetype_df(summary = summary),
                                lambda summary: self.create_dataframe_leftover_fields(summary = summary)]
         self.function_calls.extend(lambda summary, ft = filetype: self.return_filetype_dfs(filetype = ft, summary = summary) for filetype in self.filetype_list)
-        self.function_calls.extend(lambda summary, ns = namespace: self.return_namespace_dfs(namespace = ns, summary= summary) for namespace in self.NAMESPACE_DICT.keys())
+        self.function_calls.extend(lambda summary, ns = namespace: self.return_namespace_dfs(namespace = ns, summary= summary) for namespace in self.METADATA_GROUPS_DICT.keys())
         self.additional_options = ["Duplicate analysis", "Add summary columns"]
         self.output_dataframe_dict = {key: value for key, value in zip(self.output_options, self.function_calls)}
 
     @cached_property
     def df_raw(self):
-       return pd.DataFrame(data = ms(self.root_dir, self.log_folder_path))
+       return pd.DataFrame(data = self.metadata.metadata_dataframe())
 
     @cached_property
     def filetype_list(self): 
@@ -75,7 +74,7 @@ class DataFrame_pipeline():
     @cached_property
     def genereren_namespace_dfs(self):
         namespace_return = {}
-        for name, regex_str in DataFrame_pipeline.NAMESPACE_DICT.items():
+        for name, regex_str in self.DataFrame_pipeline.METADATA_GROUPS_DICT.items():
             df = self.df_raw.filter(axis = 1, regex = regex_str).replace("", None).dropna(how = "all", axis = 0) 
             df = df[df.isna().sum().sort_values(ascending=True).index] 
             column = self.df_raw.loc[df.index, "tika:file_ext"] 
@@ -111,7 +110,7 @@ class DataFrame_pipeline():
         index = list(set(chain.from_iterable(index)))
         return self.summary_columns(self.df_raw.drop(index, axis = 1)).set_index("tika:file_ext") if summary else self.df_raw.drop(index, axis = 1).set_index("tika:file_ext")
 
-    def visualiseren_duplicaten_DataFrames(self, df, summary = False): 
+    def visualiseren_duplicaten_DataFrames(self, df): 
         columns = []
         for col_a, col_b in combinations(df.columns, 2):
             overlap = (df[col_a] == df[col_b]).sum()
@@ -121,7 +120,7 @@ class DataFrame_pipeline():
         unpack = list(chain.from_iterable(columns))
         remove_duplicates = list(dict.fromkeys(unpack))
         df = df[remove_duplicates]
-        return self.summary_columns(df) if summary else df
+        return self.summary_columns(df)
     
     ##funcs for percentage non-NA values per namespace
     def make_namespace_series(self): 
@@ -151,15 +150,22 @@ class DataFrame_pipeline():
     # def df_browser_viewer(self):
     # dtale.show(df)
     
-    #def output_duplicate_analysis
+    def output_duplicate_analysis
        #viable choices list
        # request_list
     
-    def df_excel_writer(self, request_list: list, summary = False):
-        self.df_raw.sample(3000).to_excel(self.xlsx_path)
+    def df_excel_writer(self, request_list: list, summary = False, sample: int = None):
+        logger = self.metadata.excelwriter_logger
+        request_dict = {request: DataFrame for request, DataFrame in self.output_dataframe_dict.items() if request in request_list}
+        if sample:
+           self.df_raw.sample(sample).to_excel(self.xlsx_path)
         with pd.ExcelWriter(self.xlsx_path, engine = "openpyxl", mode = "a") as writer:
-            for request in request_list:
-               self.output_dataframe_dict.get(request)(summary = summary).to_excel(writer, sheet_name = request)
+            for request, func in request_dict.items():
+                output = func(summary = summary)
+                if output.empty:
+                   logger.info(f"{request} DataFrame empty! Cannot write to excel")
+                else:
+                    output.to_excel(writer, sheet_name = request)
 
 
 

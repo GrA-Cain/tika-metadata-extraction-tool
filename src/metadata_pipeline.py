@@ -6,7 +6,7 @@ import logging
 import yaml
 
 
-class metadata_pipeline():
+class MetaDataPipeline():
     
     #output metadata dictionary structuur
     DOCX_METADATA_STRUCTUUR = {
@@ -68,7 +68,7 @@ class metadata_pipeline():
     "reply_to": "Message:Raw-Header:In-Reply-To", 
     "message_id": "Message:Raw-Header:Message-ID",}
    
-    def __init__(self, log_folder_path, root_dir):
+    def __init__(self, log_folder_path : str | Path, root_dir : str | Path):
         self.log_folder_path = Path(log_folder_path)
         self.root_dir = Path(root_dir)
         self.json_logger = self.make_logger(name = "Remove_json")
@@ -90,31 +90,28 @@ class metadata_pipeline():
 
     def remove_json(self, alle_json_verwijderen = False, yaml_verwijderen = False):
             logger = self.json_logger
-            files_verwijderd = 0 
+            files_deleted = 0 
             files_list = []
             if alle_json_verwijderen:
                 json_files = list(self.root_dir.rglob('*.json'))
-                json_type = "json"
-                logger.info(f"{len(json_files)} {json_type} files found")
+                logger.info(f"{len(json_files)} .json files found")
                 files_list += json_files
             else: 
                 json_metadata_files = list(self.root_dir.rglob('*.metadata.json'))
-                json_metadata_type = "metadata.json"
-                logger.info(f"{len(json_metadata_files)} {json_metadata_type} files found")
+                logger.info(f"{len(json_metadata_files)} .metadata.json files found")
                 files_list += json_metadata_files
             if yaml_verwijderen:
                 yaml_files = list(self.root_dir.rglob('*.metadata.yaml'))
-                yaml_type = "metadata.yaml"
-                logger.info(f"{len(yaml_files)} {yaml_type} files found")
+                logger.info(f"{len(yaml_files)} .yaml files found")
                 files_list += yaml_files
             for file in files_list:
                 try:
                    file.unlink()
-                   files_verwijderd += 1
+                   files_deleted += 1
                 except Exception as e:
                     logger.error(f"Something went wrong with {file}: {e}", exc_info = True)
-            logger.info(f"{files_verwijderd} files verwijderd")
-            if files_verwijderd == 0:
+            logger.info(f"{files_deleted} files deleted")
+            if files_deleted == 0:
                 logger.info("did not delete any files")
 
     def metadata_genereren(self, output_dir = None): ##working directory aanpassen
@@ -122,16 +119,16 @@ class metadata_pipeline():
         all_paths = list(self.root_dir.rglob('*'))
         logger.info(f"Scan: {len(all_paths)} paden gevonden! (mappen en bestanden)")
         folders_list = []
-        files_list = []
+        files_list_before = []
         for folders in all_paths: 
             if folders.is_dir():
                 folders_list.append(folders)
             elif folders.is_file():
-                files_list.append(folders)
+                files_list_before.append(folders)
         logger.info(f"Scan: {len(folders_list)} folders found!")
-        logger.info(f"Scan: {len(files_list)} files found!")
-        files_list = list(set(files_list))
-        logger.info(f"Scan: {len(files_list)} files left after removing duplicates")
+        logger.info(f"Scan: {len(files_list_before)} files found!")
+        files_list_after = list(set(files_list_before))
+        logger.info(f"Scan: warning: {len(files_list_before) - len(files_list_after)} duplicates found!")
         for index, paths in enumerate(folders_list): 
             try:
                     cmd_command = f'java -jar tika.jar -i "{paths}" -o "{output_dir if output_dir is not None else paths}" -J -excludeFilePat ".json"' 
@@ -150,7 +147,8 @@ class metadata_pipeline():
         files_made = 0
         if not files:
             logger.warning("Geen json file gevonden in de map")
-        for index, file in enumerate(files): 
+        for index, file in enumerate(files):
+            new_dict = None 
             with open(file, mode = 'r', encoding = 'UTF-8') as f:
                 if file.suffixes[-2] == ".metadata": 
                     continue
@@ -165,28 +163,30 @@ class metadata_pipeline():
                     new_dict = {k: tika_json_file[0].get(v) for k, v in self.MSG_METADATA_STRUCTUUR.items()}
                 else:
                     continue
-                try:
+            if new_dict is None:
+                continue
+            try:
+                if output_as_yaml:
+                    sidecar_file_name_extension = file.stem + '.metadata.yaml'
+                else:
+                    sidecar_file_name_extension = file.stem + '.metadata.json'
+                file_match = [match for match in list(self.root_dir.rglob(f"{file.stem}*")) if match.is_file()]
+                if not file_match:
+                    logger.warning(f"geen match voor {file.stem} gevonden, bestand overgeslagen!")
+                    continue
+                output_directory = file_match[0].parent
+                side_car_path = output_directory / sidecar_file_name_extension
+                with open(side_car_path, "w", encoding='utf-8') as path:
                     if output_as_yaml:
-                        sidecar_file_name_extension = file.stem + '.metadata.yaml'
+                        yaml.dump(new_dict, path, encoding = "utf-8", allow_unicode = True)
                     else:
-                        sidecar_file_name_extension = file.stem + '.metadata.json'
-                    file_match = [match for match in list(self.root_dir.rglob(f"{file.stem}*")) if match.is_file()]
-                    if not file_match:
-                        logger.warning(f"geen match voor {file.stem} gevonden, bestand overgeslagen!")
-                        continue
-                    output_directory = file_match[0].parent
-                    side_car_path = output_directory / sidecar_file_name_extension
-                    with open(side_car_path, "w", encoding='utf-8') as path:
-                        if output_as_yaml:
-                            yaml.dump(new_dict, path, encoding = "utf-8", allow_unicode = True)
-                        else:
-                            json.dump(new_dict, path, indent=2, ensure_ascii=False)
-                    files_made += 1
-                except Exception as e:
-                    logger.error(f"error: {e}")
-                if index % 50 == 0:
-                    logger.info(f"progress: {index} of {len(files)} file processed!")
-        logger.info(f"finished: {files_made} metadata file created!")
+                        json.dump(new_dict, path, indent=2, ensure_ascii=False)
+                files_made += 1
+            except Exception as e:
+                logger.error(f"error: {e}")
+            if index % 50 == 0:
+                logger.info(f"progress: {index} of {len(files)} file processed!")
+                logger.info(f"finished: {files_made} metadata file created!")
 
     def metadata_dataframe(self):
         logger = self.dataframe_logger
@@ -213,4 +213,3 @@ class metadata_pipeline():
             except Exception as e:
                     logger.error(f"Something went wrong with {file}: {e}", exc_info = True)
         return metadata
-
