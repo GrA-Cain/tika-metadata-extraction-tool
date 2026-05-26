@@ -6,6 +6,7 @@ import xlsxwriter
 from itertools import combinations, chain
 from functools import cached_property
 import dtale
+from openpyxl import Workbook
 
 
 class DataFramePipeline():
@@ -110,10 +111,15 @@ class DataFramePipeline():
         index = list(set(chain.from_iterable(index)))
         return self.summary_columns(self.df_raw.drop(index, axis = 1)).set_index("tika:file_ext") if summary else self.df_raw.drop(index, axis = 1).set_index("tika:file_ext")
 
+
+    @staticmethod  #zie functie hieronder, als een metadataveld een lijst bevat en je dat gaat vergelijken ("==") met een ander datatype dan krijg je een error
+    def list_correction(value):
+        return str(value) if isinstance(value, list) else value
+
     def visualiseren_duplicaten_DataFrames(self, df): 
         columns = []
         for col_a, col_b in combinations(df.columns, 2):
-            overlap = (df[col_a] == df[col_b]).sum()
+            overlap = (df[col_a].apply(self.list_correction) == df[col_b].apply(self.list_correction)).sum()
             percentage_overlap = overlap / len(df) * 100
             if percentage_overlap > 70: 
                 columns.append((col_a, col_b))
@@ -145,39 +151,36 @@ class DataFramePipeline():
         df = pd.concat([df, df_mean_values], axis=1).rename({0 : 'gemiddelde'}, axis = 1).sort_values(axis = 0, by = ['gemiddelde'] , ascending= False)
         namespace_series = self.make_namespace_series()
         df = df.assign(namespace = namespace_series)
-        return df if summary else df #niet heel elegant maar zo krijg je tenminste geen type-error als je hier summary invult, fixen met logging?
+        return df if summary else df #niet heel elegant maar zo krijg je tenminste geen type-error als je hier summary invult in de ui, fixen met logging?
     
-    # def df_browser_viewer(self):
-    # dtale.show(df)
-    
-    def output_duplicate_analysis
-       #viable choices list
-       # request_list
-    
-    def df_excel_writer(self, request_list: list, summary = False, sample: int = None):
+    def df_browser_viewer(self, d_tale_request, summary = False, duplicate_check = False):
+        logger = self.metadata.dtale_browser_logger
+        if d_tale_request not in self.output_dataframe_dict:
+            logger.warning(f"Requested ({d_tale_request}) DataFrame does not exist")
+            return
+        d = dtale.show(self.visualiseren_duplicaten_DataFrames(self.output_dataframe_dict.get(d_tale_request)()) if duplicate_check else self.output_dataframe_dict.get(d_tale_request)(summary = summary) , name=d_tale_request)
+        d.open_browser()
+
+    def df_excel_writer(self, request_list: list, workbook_name: str, summary = False, sample_frac: float = None):
         logger = self.metadata.excelwriter_logger
+        xlsx_path = self.xlsx_path / (workbook_name if workbook_name.endswith(".xlsx") else workbook_name + ".xlsx")
+        if sample_frac and not 0 < sample_frac <= 1:
+            logger.warning("Sample_frac needs to be between 0 and 1 (float)")
+            return
         request_dict = {request: DataFrame for request, DataFrame in self.output_dataframe_dict.items() if request in request_list}
-        if sample:
-           self.df_raw.sample(sample).to_excel(self.xlsx_path) #add sample to all functions
+        if not self.xlsx_path.exists():
+            wb = Workbook()
+            wb.save(xlsx_path)
         with pd.ExcelWriter(self.xlsx_path, engine = "openpyxl", mode = "a") as writer:
             for request, func in request_dict.items():
                 output = func(summary = summary)
                 if output.empty:
-                   logger.info(f"{request} DataFrame empty! Cannot write to excel")
+                   logger.warning(f"{request} DataFrame empty! Cannot write to excel")
+                   continue
+                if sample_frac:
+                    output.sample(frac = sample_frac).to_excel(writer, sheet_name = request)
                 else:
                     output.to_excel(writer, sheet_name = request)
     
-    def df_excel_writer_duplicates(self, request_list: list, summary = False, sample: int = None):
-        logger = self.metadata.excelwriter_logger
-        request_dict = {request: DataFrame for request, DataFrame in self.output_dataframe_dict.items() if request in request_list}
-        if sample:
-           self.df_raw.sample(sample).to_excel(self.xlsx_path)
-        with pd.ExcelWriter(self.xlsx_path, engine = "openpyxl", mode = "a") as writer:
-            for request, func in request_dict.items():
-                output = func(summary = summary)
-                if output.empty:
-                   logger.info(f"{request} DataFrame empty! Cannot write to excel")
-                else:
-                    output.to_excel(writer, sheet_name = request)
 
 

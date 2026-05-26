@@ -4,6 +4,7 @@ import subprocess
 import os
 import logging
 import yaml
+import pandas as pd
 
 
 class MetaDataPipeline():
@@ -71,10 +72,11 @@ class MetaDataPipeline():
     def __init__(self, log_folder_path : str | Path, root_dir : str | Path):
         self.log_folder_path = Path(log_folder_path)
         self.root_dir = Path(root_dir)
-        self.json_logger = self.make_logger(name = "Remove_json")
-        self.tika_logger = self.make_logger(name = "Tika_metadata")
-        self.selectie_logger = self.make_logger(name = "Metadata_selectie")
-        self.dataframe_logger = self.make_logger(name = "DataFrame_ingest")
+        self.json_logger = self.make_logger(name = "JSON deleter")
+        self.tika_logger = self.make_logger(name = "Tika metadata")
+        self.selectie_logger = self.make_logger(name = "Metadata selectie")
+        self.dataframe_logger = self.make_logger(name = "DataFrame ingest")
+        self.dtale_browser_logger = self.make_logger(name = "Browser viewer")
         self.tika_location = Path(__file__).parent
        
 
@@ -212,4 +214,4 @@ class MetaDataPipeline():
                     metadata.append(primary_metadata)
             except Exception as e:
                     logger.error(f"Something went wrong with {file}: {e}", exc_info = True)
-        return metadata
+        return pd.DataFrame(metadata)

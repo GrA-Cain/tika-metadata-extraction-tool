@@ -3,6 +3,7 @@
 *__pycache__
 *.venv
 *.vscode
+*overig
 #Archivetextminer voor informatie
 *ArchiveTextMiner_sourcecode
 #onnodige files in sourcefile
@@ -16,3 +17,5 @@ src/extract_text.py
 #testjes files
 test.py
 testje_functionaliteit_unstructured.py
+notes.txt
+testen_random_code.py
