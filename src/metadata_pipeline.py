@@ -69,7 +69,7 @@ class MetaDataPipeline():
     "reply_to": "Message:Raw-Header:In-Reply-To", 
     "message_id": "Message:Raw-Header:Message-ID",}
    
-    def __init__(self, log_folder_path : str | Path, root_dir : str | Path):
+    def __init__(self, root_dir : str | Path, log_folder_path : str | Path):
         self.log_folder_path = Path(log_folder_path)
         self.root_dir = Path(root_dir)
         self.json_logger = self.make_logger(name = "JSON deleter")
@@ -77,7 +77,8 @@ class MetaDataPipeline():
         self.selectie_logger = self.make_logger(name = "Metadata selectie")
         self.dataframe_logger = self.make_logger(name = "DataFrame ingest")
         self.dtale_browser_logger = self.make_logger(name = "Browser viewer")
-        self.tika_location = Path(__file__).parent
+        self.excelwriter_logger = self.make_logger(name = "Excelwriter")
+        self.tika_location = Path(__file__).parents[1]
        
 
 

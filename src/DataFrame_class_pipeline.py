@@ -25,9 +25,9 @@ class DataFramePipeline():
     
     def __init__(self, root_dir : str | Path, log_folder_path : str | Path, xlsx_path : str | Path):
         self.metadata = MetaDataPipeline(root_dir, log_folder_path)
-        self.xlsx_path = xlsx_path
+        self.xlsx_path = Path(xlsx_path)
         self.output_options = ["basis", "Coverage (non-NA) of metadata by filetype", "Leftover fields"] + self.filetype_list + list(self.METADATA_GROUPS_DICT.keys())
-        self.function_calls = [lambda: self.df_raw,
+        self.function_calls = [lambda summary = False: self.df_raw,
                                lambda summary: self.field_coverage_by_filetype_df(summary = summary),
                                lambda summary: self.create_dataframe_leftover_fields(summary = summary)]
         self.function_calls.extend(lambda summary, ft = filetype: self.return_filetype_dfs(filetype = ft, summary = summary) for filetype in self.filetype_list)
@@ -168,19 +168,19 @@ class DataFramePipeline():
             logger.warning("Sample_frac needs to be between 0 and 1 (float)")
             return
         request_dict = {request: DataFrame for request, DataFrame in self.output_dataframe_dict.items() if request in request_list}
-        if not self.xlsx_path.exists():
+        if not xlsx_path.exists():
             wb = Workbook()
             wb.save(xlsx_path)
-        with pd.ExcelWriter(self.xlsx_path, engine = "openpyxl", mode = "a") as writer:
+        with pd.ExcelWriter(xlsx_path, engine = "openpyxl", mode = "a") as writer:
             for request, func in request_dict.items():
-                output = func(summary = summary)
+                output = func(summary = False)
                 if output.empty:
                    logger.warning(f"{request} DataFrame empty! Cannot write to excel")
                    continue
                 if sample_frac:
-                    output.sample(frac = sample_frac).to_excel(writer, sheet_name = request)
+                    self.summary_columns(output.sample(frac = sample_frac)).to_excel(writer, sheet_name = request) if summary else output.sample(frac = sample_frac).to_excel(writer, sheet_name = request)
                 else:
-                    output.to_excel(writer, sheet_name = request)
+                    self.summary_columns(output).to_excel(writer, sheet_name = request) if summary else output.to_excel(writer, sheet_name = request)
     
 
 
