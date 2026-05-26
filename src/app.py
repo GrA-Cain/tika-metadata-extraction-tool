@@ -32,9 +32,9 @@ with tab1:
                     st.error(f"Er is iets misgegaan: {e}")
 
 with tab2:
-    root_dir = st.text_input("Root directory (pad)", key = "visualisatie_root_dir")
-    log_folder_path = st.text_input("Log folder (pad)", key = "visualisatie_log_folder_path")
-    xlsx_path = st.text_input("Excel output folder", key = "visualisatie_xlsx_folder")
+    root_dir = st.text_input("Root directory (pad)", value = "C:/Users/m.venema/Desktop/bestanden_root_dir",  key = "visualisatie_root_dir") #value = testing
+    log_folder_path = st.text_input("Log folder (pad)", value = "C:/Users/m.venema/Desktop/pipeline_test/logging_folder", key = "visualisatie_log_folder_path") #value = testing
+    xlsx_path = st.text_input("Excel output folder", value = "C:/Users/m.venema/Desktop/pipeline_test/xlsx_path",  key = "visualisatie_xlsx_folder") #value = testing
     if st.button("Pipeline starten!", key = "vis_pipeline_button"):
         st.session_state.df_pipeline = DataFramePipeline(root_dir=root_dir, log_folder_path=log_folder_path, xlsx_path=xlsx_path)
         st.success("Pipeline geïnitialiseerd!")
