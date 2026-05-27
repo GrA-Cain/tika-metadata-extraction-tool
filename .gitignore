@@ -14,6 +14,8 @@ src/ai_response_jsonstructure.json
 src/notes.txt
 src/testen_random_code.py
 src/extract_text.py
+src/test.ipynb
+src/test.py
 #testjes files
 test.py
 testje_functionaliteit_unstructured.py

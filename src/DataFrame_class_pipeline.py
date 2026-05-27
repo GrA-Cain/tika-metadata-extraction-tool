@@ -21,18 +21,18 @@ class DataFramePipeline():
                 "MSIP group" : "^(?!pdf:).*MSIP_Label",
                 "Exif group": "Exif|exif",
                 "Image group" : "Image"
-                } #you can add metadata groups here using the following format "name" (key) : "regex str"(value). 
+                } #you can add metadata groups here using the following format "name" (key) : "regex str"(value). May require some tweaking to get the right regex, use LLMs for this! 
     
     def __init__(self, root_dir : str | Path, log_folder_path : str | Path, xlsx_path : str | Path):
         self.metadata = MetaDataPipeline(root_dir, log_folder_path)
         self.xlsx_path = Path(xlsx_path)
-        self.output_options = ["basis", "Coverage (non-NA) of metadata by filetype", "Leftover fields"] + self.filetype_list + list(self.METADATA_GROUPS_DICT.keys())
+        self.output_options = ["Full DataFrame", "Percentage of non-NA fields per filetype", "Ungrouped fields(not part of a group, so leftovers)"] + self.filetype_list + list(self.METADATA_GROUPS_DICT.keys())
         self.function_calls = [lambda summary = False: self.df_raw,
-                               lambda summary: self.field_coverage_by_filetype_df(summary = summary),
-                               lambda summary: self.create_dataframe_leftover_fields(summary = summary)]
-        self.function_calls.extend(lambda summary, ft = filetype: self.return_filetype_dfs(filetype = ft, summary = summary) for filetype in self.filetype_list)
-        self.function_calls.extend(lambda summary, ns = namespace: self.return_namespace_dfs(namespace = ns, summary= summary) for namespace in self.METADATA_GROUPS_DICT.keys())
-        self.additional_options = ["Duplicate analysis", "Add summary columns"]
+                               lambda summary = False: self.field_coverage_by_filetype_df,
+                               lambda summary = False: self.create_dataframe_leftover_fields(summary = summary)]
+        self.function_calls.extend(lambda summary = False, ft = filetype: self.return_filetype_dfs(filetype = ft, summary = summary) for filetype in self.filetype_list)
+        self.function_calls.extend(lambda summary = False, ns = namespace: self.return_namespace_dfs(namespace = ns, summary= summary) for namespace in self.METADATA_GROUPS_DICT.keys())
+        self.additional_options = ["Duplicate analysis", "Add summary columns"] #unused
         self.output_dataframe_dict = {key: value for key, value in zip(self.output_options, self.function_calls)}
 
     @cached_property
@@ -80,7 +80,7 @@ class DataFramePipeline():
         for name, regex_str in self.METADATA_GROUPS_DICT.items():
             df = self.df_raw.filter(axis = 1, regex = regex_str).replace("", None).dropna(how = "all", axis = 0) 
             df = df[df.isna().sum().sort_values(ascending=True).index] 
-            column = self.df_raw.loc[df.index, ["tika:file_ext", "resourceName"]] 
+            column = self.df_raw.loc[df.index, "resourceName"] #"tika:file_ext",
             df = pd.concat([df, column], axis = 1) 
             df = df.set_index("resourceName") 
             namespace_return[name] = df
@@ -91,9 +91,8 @@ class DataFramePipeline():
         has_value_in_non_jpg = self.df_raw[non_jpeg].notna().any(axis=0)
         jpg_only_cols = has_value_in_jpg & ~has_value_in_non_jpg 
         df = self.df_raw.loc[:, jpg_only_cols].dropna(how = "all", axis = 0).drop(namespace_return["Exif group"].columns, axis = 1, errors ="ignore") 
-        file_ext_column = self.df_raw.loc[df.index, "tika:file_ext"]
         tika_filename_columns = self.df_raw.loc[df.index, "resourceName"]
-        df = pd.concat([df, file_ext_column, tika_filename_columns], axis = 1).set_index("resourceName")
+        df = pd.concat([df, tika_filename_columns], axis = 1).set_index("resourceName")
         namespace_return["Image group"] = df
         return namespace_return
     
@@ -115,14 +114,14 @@ class DataFramePipeline():
         return self.summary_columns(self.df_raw.drop(index, axis = 1)).set_index("resourceName") if summary else self.df_raw.drop(index, axis = 1).set_index("resourceName")
 
 
-    @staticmethod  #zie functie hieronder, als een metadataveld een lijst bevat en je dat gaat vergelijken ("==") met een ander datatype dan krijg je een error
-    def list_correction(value):
-        return str(value) if isinstance(value, list) else value
+    # @staticmethod  #zie functie hieronder, als een metadataveld een lijst bevat en je dat gaat vergelijken ("==") met een ander datatype dan krijg je een error
+    # def list_correction(value):
+    #     return str(value) if isinstance(value, list) else value
 
     def visualiseren_duplicaten_DataFrames(self, df): 
         columns = []
         for col_a, col_b in combinations(df.columns, 2):
-            overlap = (df[col_a].apply(self.list_correction) == df[col_b].apply(self.list_correction)).sum()
+            overlap = (df[col_a] == df[col_b]).sum()
             percentage_overlap = overlap / len(df) * 100
             if percentage_overlap > 70: 
                 columns.append((col_a, col_b))
@@ -137,12 +136,13 @@ class DataFramePipeline():
         for name, df in self.genereren_namespace_dfs.items():
             series = pd.Series(name, index = df.columns)
             combined.append(series)
-        combined.append(pd.Series("Restant", index = self.create_dataframe_leftover_fields().columns)) 
+        combined.append(pd.Series("Leftover", index = self.create_dataframe_leftover_fields().columns)) 
+        combined.append(pd.Series("X-tika group", index = ["resourceName"]))
         combined = pd.concat(combined)
         return combined
     
     @cached_property
-    def field_coverage_by_filetype_df(self, summary = False):
+    def field_coverage_by_filetype_df(self):
         percentage_dict = {}
         for filetype in self.filetype_list:
             filetype_df = self.df_raw.set_index("tika:file_ext").filter(axis = 0, regex = filetype)
@@ -154,15 +154,14 @@ class DataFramePipeline():
         df = pd.concat([df, df_mean_values], axis=1).rename({0 : 'gemiddelde'}, axis = 1).sort_values(axis = 0, by = ['gemiddelde'] , ascending= False)
         namespace_series = self.make_namespace_series()
         df = df.assign(namespace = namespace_series)
-        return df if summary else df #niet heel elegant maar zo krijg je tenminste geen type-error als je hier summary invult in de ui, fixen met logging?
+        return df #niet heel elegant maar zo krijg je tenminste geen type-error als je hier summary invult in de ui, fixen met logging?
     
-    def df_browser_viewer(self, d_tale_request, summary = False, duplicate_check = False):
+    def df_browser_viewer(self, preview_request, summary = False, duplicate_check = False):
         logger = self.metadata.dtale_browser_logger
-        if d_tale_request not in self.output_dataframe_dict:
-            logger.warning(f"Requested ({d_tale_request}) DataFrame does not exist")
+        if preview_request not in self.output_dataframe_dict:
+            logger.warning(f"Requested ({preview_request}) DataFrame does not exist")
             return
-        d = dtale.show(self.visualiseren_duplicaten_DataFrames(self.output_dataframe_dict.get(d_tale_request)()) if duplicate_check else self.output_dataframe_dict.get(d_tale_request)(summary = summary) , name=d_tale_request)
-        d.open_browser()
+        return self.visualiseren_duplicaten_DataFrames(self.output_dataframe_dict.get(preview_request)()) if duplicate_check else self.output_dataframe_dict.get(preview_request)(summary = summary)
 
     def df_excel_writer(self, request_list: list, workbook_name: str, summary = False, sample_frac: float = None):
         logger = self.metadata.excelwriter_logger
@@ -184,6 +183,5 @@ class DataFramePipeline():
                     self.summary_columns(output.sample(frac = sample_frac)).to_excel(writer, sheet_name = request) if summary else output.sample(frac = sample_frac).to_excel(writer, sheet_name = request)
                 else:
                     self.summary_columns(output).to_excel(writer, sheet_name = request) if summary else output.to_excel(writer, sheet_name = request)
-    
 
 

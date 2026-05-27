@@ -211,7 +211,7 @@ class MetaDataPipeline():
                     if not all_metadata:
                         logger.error(f"PATH: {file} does not exist or could not be loaded, skipping")
                         continue
-                    primary_metadata = all_metadata[0]
+                    primary_metadata = {k: str(v) if isinstance(v, list) else v for k, v in all_metadata[0].items()}
                     metadata.append(primary_metadata)
             except Exception as e:
                     logger.error(f"Something went wrong with {file}: {e}", exc_info = True)
