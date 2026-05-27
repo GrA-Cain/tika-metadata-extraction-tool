@@ -72,27 +72,20 @@ class MetaDataPipeline():
     def __init__(self, root_dir : str | Path, log_folder_path : str | Path):
         self.log_folder_path = Path(log_folder_path)
         self.root_dir = Path(root_dir)
-        self.json_logger = self.make_logger(name = "JSON deleter")
-        self.tika_logger = self.make_logger(name = "Tika metadata")
-        self.selectie_logger = self.make_logger(name = "Metadata selectie")
-        self.dataframe_logger = self.make_logger(name = "DataFrame ingest")
-        self.dtale_browser_logger = self.make_logger(name = "Browser viewer")
-        self.excelwriter_logger = self.make_logger(name = "Excelwriter")
         self.tika_location = Path(__file__).parents[1]
-       
-
+    
 
     def make_logger(self, name: str):
         logger = logging.getLogger(name)
-        if not logger.handlers:
-            handler = logging.FileHandler(filename = self.log_folder_path / f"{name}.log")
-            handler.setFormatter(logging.Formatter(("%(asctime)s - %(levelname)s - %(message)s")))
-            logger.setLevel(logging.DEBUG)
-            logger.addHandler(handler)
+        logger.handlers = []
+        handler = logging.FileHandler(filename = self.log_folder_path / f"{name}.log", mode='a')
+        handler.setFormatter(logging.Formatter(("%(asctime)s - %(levelname)s - %(message)s")))
+        logger.setLevel(logging.DEBUG)
+        logger.addHandler(handler)
         return logger
 
     def remove_json(self, alle_json_verwijderen = False, yaml_verwijderen = False):
-            logger = self.json_logger
+            logger = self.make_logger(name = "Tika metadata")
             files_deleted = 0 
             files_list = []
             if alle_json_verwijderen:
@@ -117,8 +110,8 @@ class MetaDataPipeline():
             if files_deleted == 0:
                 logger.info("did not delete any files")
 
-    def metadata_genereren(self, output_dir = None): ##working directory aanpassen
-        logger = self.tika_logger
+    def metadata_genereren(self, output_dir = None):
+        logger = self.make_logger(name = "Tika metadata")
         all_paths = list(self.root_dir.rglob('*'))
         logger.info(f"Scan: {len(all_paths)} paden gevonden! (mappen en bestanden)")
         folders_list = []
@@ -134,7 +127,7 @@ class MetaDataPipeline():
         logger.info(f"Scan: warning: {len(files_list_before) - len(files_list_after)} duplicates found!")
         for index, paths in enumerate(folders_list): 
             try:
-                    cmd_command = f'java -jar tika.jar -i "{paths}" -o "{output_dir if output_dir is not None else paths}" -J -excludeFilePat ".json"' 
+                    cmd_command = f'call configure.bat && java -jar tika.jar -i "{paths}" -o "{output_dir if output_dir is not None else paths}" -J -excludeFilePat ".json"' 
                     subprocess.run(cmd_command, shell = True, capture_output=True, timeout= 60, check=True, text = True, cwd= self.tika_location)
             except Exception as e:
                 stder_output = getattr(e, "stderr", None)
@@ -144,7 +137,7 @@ class MetaDataPipeline():
            
             
     def metadata_selectie(self, output_as_yaml = False):
-        logger = self.selectie_logger
+        logger = self.make_logger(name = "Metadata selectie")
         files = list(self.root_dir.rglob('*.json')) #List alle paden .json file
         logger.info(f"found {len(files)} .json file!")
         files_made = 0
@@ -189,10 +182,10 @@ class MetaDataPipeline():
                 logger.error(f"error: {e}")
             if index % 50 == 0:
                 logger.info(f"progress: {index} of {len(files)} file processed!")
-                logger.info(f"finished: {files_made} metadata file created!")
+        logger.info(f"finished: {files_made} metadata file created!")
 
     def metadata_dataframe(self):
-        logger = self.dataframe_logger
+        logger = self.make_logger(name = "DataFrame ingest")
         if not self.root_dir.exists():
             logger.error(f"{self.root_dir} does not exist!")
             logger.info("aborting!")
@@ -211,7 +204,7 @@ class MetaDataPipeline():
                     if not all_metadata:
                         logger.error(f"PATH: {file} does not exist or could not be loaded, skipping")
                         continue
-                    primary_metadata = {k: str(v) if isinstance(v, list) else v for k, v in all_metadata[0].items()}
+                    primary_metadata = {k: str(v) if isinstance(v, list) else v for k, v in all_metadata[0].items()} #also converts lists to string to allow for comparisons between values (as lists are unhashable, it errors)
                     metadata.append(primary_metadata)
             except Exception as e:
                     logger.error(f"Something went wrong with {file}: {e}", exc_info = True)

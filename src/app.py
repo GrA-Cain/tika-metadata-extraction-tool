@@ -63,10 +63,12 @@ with tab2:
         else:
             sample_frac = None
         if st.button("Genereer .xlsx files van geselecteerde DataFrames"):
-            st.session_state.df_pipeline.df_excel_writer(request_list = excel_request,
-                                                         workbook_name = workbook_name,
-                                                         summary = summary,
-                                                         sample_frac = sample_frac)
+            with st.spinner(".xlsx laden...", show_time = True):
+                    st.session_state.df_pipeline.df_excel_writer(
+                        request_list = excel_request,
+                        workbook_name = workbook_name,
+                        summary = summary,
+                        sample_frac = sample_frac)
         st.markdown("### **Previewer**")
         preview_request = st.selectbox("Selecteer DataFrame", key = "preview_request", options=st.session_state.df_pipeline.output_options)
         incompatible_request = preview_request == "Percentage of non-NA fields per filetype"
@@ -76,7 +78,7 @@ with tab2:
         st.caption("duplicate check DataFrames zijn zwaar om te berekenen en kunnen even duren!")
         if st.button("Preview DataFrame"):
             start = time.time()
-            with st.spinner("DataFrame laden...!"):
+            with st.spinner("DataFrame laden...!", show_time = True):
                 output = st.session_state.df_pipeline.df_browser_viewer(
                 preview_request=preview_request,
                 summary=summary_browser,

@@ -8,7 +8,7 @@ from functools import cached_property
 import dtale
 from openpyxl import Workbook
 
-
+#note: namespaces en groups zijn synoniemen voor groeperingen van metadatavelden
 class DataFramePipeline():
     METADATA_GROUPS_DICT = {"Message group": "Message:|Message-",
                 "Mapi group" : "mapi:",
@@ -114,9 +114,6 @@ class DataFramePipeline():
         return self.summary_columns(self.df_raw.drop(index, axis = 1)).set_index("resourceName") if summary else self.df_raw.drop(index, axis = 1).set_index("resourceName")
 
 
-    # @staticmethod  #zie functie hieronder, als een metadataveld een lijst bevat en je dat gaat vergelijken ("==") met een ander datatype dan krijg je een error
-    # def list_correction(value):
-    #     return str(value) if isinstance(value, list) else value
 
     def visualiseren_duplicaten_DataFrames(self, df): 
         columns = []
@@ -157,14 +154,14 @@ class DataFramePipeline():
         return df #niet heel elegant maar zo krijg je tenminste geen type-error als je hier summary invult in de ui, fixen met logging?
     
     def df_browser_viewer(self, preview_request, summary = False, duplicate_check = False):
-        logger = self.metadata.dtale_browser_logger
+        logger =  self.metadata.make_logger(name = "Browser viewer")
         if preview_request not in self.output_dataframe_dict:
             logger.warning(f"Requested ({preview_request}) DataFrame does not exist")
             return
         return self.visualiseren_duplicaten_DataFrames(self.output_dataframe_dict.get(preview_request)()) if duplicate_check else self.output_dataframe_dict.get(preview_request)(summary = summary)
 
     def df_excel_writer(self, request_list: list, workbook_name: str, summary = False, sample_frac: float = None):
-        logger = self.metadata.excelwriter_logger
+        logger = self.metadata.make_logger(name = "Excelwriter")
         xlsx_path = self.xlsx_path / (workbook_name if workbook_name.endswith(".xlsx") else workbook_name + ".xlsx")
         if sample_frac and not 0 < sample_frac <= 1:
             logger.warning("Sample_frac needs to be between 0 and 1 (float)")
