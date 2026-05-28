@@ -3,6 +3,7 @@
 *__pycache__
 *.venv
 *.vscode
+configure.bat
 #Archivetextminer voor informatie
 *ArchiveTextMiner_sourcecode
 #onnodige files in sourcefile
