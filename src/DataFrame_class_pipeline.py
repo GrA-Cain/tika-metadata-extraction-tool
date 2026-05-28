@@ -151,7 +151,7 @@ class DataFramePipeline():
         df = pd.concat([df, df_mean_values], axis=1).rename({0 : 'gemiddelde'}, axis = 1).sort_values(axis = 0, by = ['gemiddelde'] , ascending= False)
         namespace_series = self.make_namespace_series()
         df = df.assign(namespace = namespace_series)
-        return df #niet heel elegant maar zo krijg je tenminste geen type-error als je hier summary invult in de ui, fixen met logging?
+        return df
     
     def df_browser_viewer(self, preview_request, summary = False, duplicate_check = False):
         logger =  self.metadata.make_logger(name = "Browser viewer")

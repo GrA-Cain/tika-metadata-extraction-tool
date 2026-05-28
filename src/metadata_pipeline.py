@@ -127,7 +127,7 @@ class MetaDataPipeline():
         logger.info(f"Scan: warning: {len(files_list_before) - len(files_list_after)} duplicates found!")
         for index, paths in enumerate(folders_list): 
             try:
-                    cmd_command = f'call configure.bat && java -jar tika.jar -i "{paths}" -o "{output_dir if output_dir is not None else paths}" -J -excludeFilePat ".json"' 
+                    cmd_command = f'java -jar tika.jar -i "{paths}" -o "{output_dir if output_dir is not None else paths}" -J -excludeFilePat ".json"' 
                     subprocess.run(cmd_command, shell = True, capture_output=True, timeout= 60, check=True, text = True, cwd= self.tika_location)
             except Exception as e:
                 stder_output = getattr(e, "stderr", None)
