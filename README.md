@@ -63,6 +63,8 @@ Dit tabblad biedt functionaliteit voor het verwijderen van gegenereerde metadata
 * BUG: het specificeren van een output_dir in het genereren van metadata output alle bestanden in de juiste directory structuur maar output ook alles in de root directory. Raadpleeg metadata_pipeline.py (method: metadata_genereren()) voor fix.
 * FEATURE: Sample fractie voor het previewen van DataFrames
 * FEATURE: Het customizen van Apachi Tika parameters in de CLI call tijdens het genereren van metadata
+* FEATURE: Meer bestandsformaten toevoegen en de gebruiker een keuze aanbieden welke bestandsformaten kunnen worden meegenomen tijdens de metadata selectie.
+* FEATURE: Alternatieve output map voor metadata selectie (.metadata) bestanden.
 
 
 ### Autheurs
