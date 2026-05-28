@@ -9,22 +9,20 @@
 	- [Licensie](#license)
 
 ## Achtergrond informatie
-Achtergrond hier
-
-
-The goals of this module are:
-- Gathering as much technical metadata as possible from a large collection of files using Apachi-Tika
-- Providing insights into the metadata output so specific fields can be selected
-- Based on this selection, generate a new JSON / YAML metadata files according to the users specifications
-
-
-
-
+De Metadata Tool is een Python-gebaseerde applicatie voor het extraheren, visualiseren en exporteren van metadata uit digitale bestanden. De tool is ontwikkeld voor archieven die in tijden van digitalisering steeds meer te maken krijgen met het metadatateren van bestanden. Met behulp van Apache Tika worden metadata automatisch uit bestanden geëxtraheerd en opgeslagen als sidecar-bestanden. De geëxtraheerde metadata kan vervolgens worden gevisualiseerd en geanalyseerd via een interactieve gebruikersinterface, en geëxporteerd naar Excel voor verdere verwerking. De tool is zo veel mogelijk met flexibiliteit in gedachten ontworpen, het idee is dat gebruikers kunnen zelf bepalen welke metadata velden worden meegenomen, hoe de output wordt gestructureerd, en welke bestandstypen worden verwerkt.
 
 ## Installatie
-```sh
-$ npm install -- dummy 
-```
+Installatie
+Vereisten
+Voor het gebruik van de Metadata Tool zijn de volgende programma's vereist:
+
+Python 3.10 of hoger — te downloaden via python.org
+Java 8 of hoger — vereist voor Apache Tika, te downloaden via java.com
+Apache Tika — voor het extraheren van metadata. Raadpleeg de officiële Tika documentatie voor installatie-instructies. Plaats het tika.jar bestand in de hoofdmap van het project.
+
+Python packages
+Installeer de benodigde Python packages via pip:
+bashpip install -r requirements.txt
 
 ## Hoe te gebruiken?
 tuturial format
