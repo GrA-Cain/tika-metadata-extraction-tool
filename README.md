@@ -29,43 +29,52 @@ pip install -r requirements.txt
 ```
 
 ## Gebruik
+
 De applicatie wordt gestart via de terminal:
+
 ```bash
 streamlit run app.py
 ```
+
 De interface bestaat uit vier tabbladen:
-1. Genereren metadata (Tika)
+
+### 1. Genereren metadata (Tika)
+
 In dit tabblad wordt Apache Tika gebruikt om metadata uit bestanden te extraheren. De gebruiker specificeert een root directory en de tool leest de metadata recursief uit. De geëxtraheerde metadata wordt standaard opgeslagen als sidecar-bestand naast het originele bestand. Optioneel kan een alternatieve outputmap worden opgegeven.
 
-2. Metadata visualisatie
+### 2. Metadata visualisatie
+
 Dit tabblad biedt een interactieve omgeving voor het analyseren en exporteren van de geëxtraheerde metadata in Excel formaat. De gebruiker kan:
 
-* Specifieke DataFrames selecteren en exporteren naar Excel
+- Specifieke DataFrames selecteren en exporteren naar Excel
+- Een voorbeeld van een DataFrame bekijken in de interface
+- Beschrijvende statistieken toevoegen aan de output
+- Een steekproef nemen van de data
+- Duplicaten tussen kolommen analyseren
 
-* Een voorbeeld van een DataFrame bekijken in de interface
+### 3. Metadata selectie
 
-* Beschrijvende statistieken toevoegen aan de output
+In dit tabblad worden de geëxtraheerde metadata velden gefilterd en opgeslagen als `.metadata.json` of `.metadata.yaml` sidecar-bestanden. De selectie is gebaseerd op vooraf gedefinieerde metadata structuren per bestandstype. (Zie class variables `MetaDataPipeline` in `src/metadata_pipeline.py`)
 
-* Een steekproef nemen van de data
-  
-* Duplicaten tussen kolommen analyseren
+### 4. Metadata files verwijderen
 
-3. Metadata selectie
-In dit tabblad worden de geëxtraheerde metadata velden gefilterd en opgeslagen als .metadata.json of .metadata.yaml sidecar-bestanden. De selectie is gebaseerd op vooraf gedefinieerde metadata structuren per bestandstype. (Zie class variables MetaDataPipeline in src/metadata_pipine.py)
+Dit tabblad biedt functionaliteit voor het verwijderen van gegenereerde metadata bestanden. Standaard worden alleen `.metadata.json` bestanden verwijderd. Optioneel kunnen ook alle `.json` bestanden of `.yaml` bestanden worden verwijderd.
 
-4. Metadata files verwijderen
-Dit tabblad biedt functionaliteit voor het verwijderen van gegenereerde metadata bestanden. Standaard worden alleen .metadata.json bestanden verwijderd. Optioneel kunnen ook alle .json bestanden of .yaml bestanden worden verwijderd.
 
-## Feature suggesties en bugs
-* FEATURE: Om .metadata.json files te genereren moet je de code in duiken (metadatapipeline class variable dictionary's) om de output te veranderen, dit moet flexibel in de UI kunnen
-* FEATURE: "Group" DataFrames zijn hardcoded in de DataFramePipeline, alhoewel het relatief makkelijk is om nieuwe groups toe te voegen moet je hier ook de code in duiken. Daarbij worden "groups" en "namespace" als synoniem gebruikt, dit moet uniform. Er moet dus een feature ontwikkeld worden zodat je makkelijk nieuwe groups kan toevoegen en groups kan verwijderen.
-* BUG?: Alleen getest op een testset van ~200 files (.docx, .pdf, .msg, .jpg en .xlsx). Sommige functionaliteit (zoals duplicaten analyse) moet wellicht geoptimaliseerd worden als je met grote datasets werkt.
-* BUG: het specificeren van een output_dir in het genereren van metadata output alle bestanden in de juiste directory structuur maar output ook alles in de root directory. Raadpleeg metadata_pipeline.py (method: metadata_genereren()) voor fix.
-* FEATURE: Sample fractie voor het previewen van DataFrames
-* FEATURE: Het customizen van Apachi Tika parameters in de CLI call tijdens het genereren van metadata
-* FEATURE: Meer bestandsformaten toevoegen en de gebruiker een keuze aanbieden welke bestandsformaten kunnen worden meegenomen tijdens de metadata selectie.
-* FEATURE: Alternatieve output map voor metadata selectie (.metadata) bestanden.
 
+# Backlog
+
+## 🐛 Bugs
+- [ ] Output dir bug: `metadata_genereren()` output alle bestanden ook in root directory — zie `metadata_pipeline.py`
+- [ ] Duplicaten analyse mogelijk niet geoptimaliseerd voor grote datasets (>200 files, ongetest)
+
+## ✨ Features
+- [ ] UI: `.metadata.json` output configureerbaar maken zonder in de code te duiken.
+- [ ] UI: Groups/namespaces beheren (toevoegen/verwijderen) zonder code aanpassing en determinologie uniformeren.
+- [ ] Sample fractie voor DataFrame previews.
+- [ ] Apache Tika CLI parameters configureerbaar in UI.
+- [ ] Meer bestandsformaten ondersteunen + gebruikerskeuze welke meegenomen worden.
+- [ ] Alternatieve output map instellen voor `.metadata` bestanden.
 
 ### Autheurs
 [@Marco Venema](https://github.com/marcovenema). #Author
