@@ -55,7 +55,6 @@ In dit tabblad worden de geëxtraheerde metadata velden gefilterd en opgeslagen 
 
 4. Metadata files verwijderen
 Dit tabblad biedt functionaliteit voor het verwijderen van gegenereerde metadata bestanden. Standaard worden alleen .metadata.json bestanden verwijderd. Optioneel kunnen ook alle .json bestanden of .yaml bestanden worden verwijderd.
-tuturial format
 
 ## Feature suggesties en bugs
 * FEATURE: Om .metadata.json files te genereren moet je de code in duiken (metadatapipeline class variable dictionary's) om de output te veranderen, dit moet flexibel in de UI kunnen
