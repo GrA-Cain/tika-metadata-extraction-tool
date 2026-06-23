@@ -4,9 +4,9 @@ services:
     ports:
       - "8501:8501"
     volumes:
-      - /home/cain/Projects/stadskanaal/bestanden:/data
-      - /home/cain/Projects/stadskanaal/logs:/logs
-      - /home/cain/Projects/stadskanaal/output:/output
-      - /home/cain/Projects/stadskanaal/excel:/excel
+      - /home/User/data:/data
+      - /home/User/logs:/logs
+      - /home/User/output:/output
+      - /home/User/excel:/excel
     environment:
       - TIKA_SERVER_JAR=/app/tika.jar
