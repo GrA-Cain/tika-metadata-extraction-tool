@@ -66,7 +66,7 @@ Dit tabblad biedt functionaliteit voor het verwijderen van gegenereerde metadata
 
 ## Docker
 
-De tool kan ook via Docker worden gedraaid. Hiermee zijn Python, Java (OpenJDK 21) en alle packages automatisch beschikbaar — er hoeft niets lokaal geïnstalleerd te worden.
+De tool kan ook via Docker worden gedraaid. Hiermee zijn Python, Java (OpenJDK 21) en alle packages automatisch beschikbaar.
 
 **Vereisten**
 
