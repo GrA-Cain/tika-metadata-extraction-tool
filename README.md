@@ -1,29 +1,33 @@
+# Tika-metadata-tool
+
 ## Table of Contents
 
-- [Tika-metadata-tool](#Tika-metadata-tool)
-	- [Achtergrond informatie](#Achtergrond-informatie)
-	- [Installatie](#installatie)
-	- [Gebruik](#Gebruik)
-   - [Feature suggesties en bugs](#Feature-suggesties-en-bugs)
-	- [Contributors](#Contributors)
-	- [Licensie](#Licensie)
+- [Achtergrond informatie](#achtergrond-informatie)
+- [Installatie](#installatie)
+- [Gebruik](#gebruik)
+- [Docker](#docker)
+- [Feature suggesties en bugs](#feature-suggesties-en-bugs)
+- [Contributors](#contributors)
+- [Licensie](#licensie)
 
 ## Achtergrond informatie
+
 De Metadata Tool is een Python-gebaseerde applicatie voor het extraheren, visualiseren en exporteren van metadata uit digitale bestanden. De tool is ontwikkeld voor archieven die in tijden van digitalisering steeds meer te maken krijgen met het metadatateren van bestanden. Met behulp van Apache Tika worden metadata automatisch uit bestanden geëxtraheerd en opgeslagen als sidecar-bestanden. De geëxtraheerde metadata kan vervolgens worden gevisualiseerd en geanalyseerd via een interactieve gebruikersinterface, en geëxporteerd naar Excel voor verdere verwerking. De tool is zo veel mogelijk met flexibiliteit in gedachten ontworpen, het idee is dat gebruikers kunnen zelf bepalen welke metadata velden worden meegenomen, hoe de output wordt gestructureerd, en welke bestandstypen worden verwerkt.
 
 ## Installatie
+
 Voor het gebruik van de Metadata Tool is het volgende vereist:
 
 * Python 3.10 of hoger: te downloaden via python.org
 
-* Java 8 of hoger:  (vereist voor Apache Tika)  te downloaden via java.com
+* Java 8 of hoger: (vereist voor Apache Tika) te downloaden via java.com
 
 * Apache Tika: voor het extraheren van metadata. Raadpleeg de officiële Tika documentatie voor installatie-instructies. Plaats het tika.jar bestand in de hoofdmap van het project (is standaard als je de libary cloned, voor de meest recente versie van het bestand: https://tika.apache.org/download.html)
-
 
 **Python packages**
 
 Installeer de benodigde Python packages via pip:
+
 ```bash
 pip install -r requirements.txt
 ```
@@ -60,15 +64,62 @@ In dit tabblad worden de geëxtraheerde metadata velden gefilterd en opgeslagen 
 
 Dit tabblad biedt functionaliteit voor het verwijderen van gegenereerde metadata bestanden. Standaard worden alleen `.metadata.json` bestanden verwijderd. Optioneel kunnen ook alle `.json` bestanden of `.yaml` bestanden worden verwijderd.
 
+## Docker
 
+De tool kan ook via Docker worden gedraaid. Hiermee zijn Python, Java (OpenJDK 21) en alle packages automatisch beschikbaar — er hoeft niets lokaal geïnstalleerd te worden.
+
+**Vereisten**
+
+* [Docker Desktop](https://www.docker.com/products/docker-desktop/) (Windows/Mac) of Docker Engine (Linux)
+
+**Stap 1: Clone de repository**
+
+```bash
+git clone https://github.com/GrA-Cain/tika-metadata-extraction-tool.git
+cd tika-metadata-extraction-tool
+```
+
+**Stap 2: Pas het volume-pad aan in `docker-compose.yml`**
+
+Open `docker-compose.yml` en vervang het pad onder `volumes` door de lokale map met de bestanden die je wilt verwerken:
+
+```yaml
+volumes:
+  - C:\Users\jij\archiefbestanden:/data   # Windows
+  - /home/jij/archiefbestanden:/data      # Mac/Linux
+```
+
+**Stap 3: Start de container**
+
+```bash
+docker compose up --build
+```
+
+De applicatie is daarna bereikbaar via: **http://localhost:8501**
+
+In de Streamlit UI gebruik je `/data` als root directory — dit verwijst naar de lokale map die je in stap 2 hebt ingesteld.
+
+**De container stoppen**
+
+```bash
+docker compose down
+```
+
+**Volgende keren starten (zonder rebuild)**
+
+```bash
+docker compose up
+```
 
 # Backlog
 
 ## 🐛 Bugs
+
 - [ ] Output dir bug: `metadata_genereren()` output alle bestanden ook in root directory — zie `metadata_pipeline.py`
 - [ ] Duplicaten analyse mogelijk niet geoptimaliseerd voor grote datasets (>200 files, ongetest)
 
 ## ✨ Features
+
 - [ ] UI: `.metadata.json` output configureerbaar maken zonder in de code te duiken.
 - [ ] UI: Groups/namespaces beheren (toevoegen/verwijderen) zonder code aanpassing en determinologie uniformeren.
 - [ ] Sample fractie voor DataFrame previews.
@@ -77,7 +128,9 @@ Dit tabblad biedt functionaliteit voor het verwijderen van gegenereerde metadata
 - [ ] Alternatieve output map instellen voor `.metadata` bestanden.
 
 ### Autheurs
+
 [@Marco Venema](https://github.com/marcovenema). #Author
 
 ## Licensie
+
 Add license info
